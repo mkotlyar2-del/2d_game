@@ -506,7 +506,9 @@
                     isBroken: false,
                     repairTimer: 0,
                     room: 0,
-                    targetRoom: 0
+                    targetRoom: 0,
+                    gardenTimer: 0,
+                    gardenStayDuration: 450 + Math.floor(Math.random() * 1350) // 15s to 60s at 60fps
                 });
             }
         }
@@ -740,6 +742,47 @@
         }
 
         function drawWalls() {
+            if (currentRoom === 2) {
+                // Draw Glass Ceiling for Garden
+                const wy = ROOM.floorY - 50;
+                const wh = 50;
+                
+                // Draw Starry Sky Background in the glass area
+                ctx.fillStyle = '#080b14';
+                ctx.fillRect(ROOM.floorX, wy, ROOM.floorW, wh);
+                
+                stars.forEach(s => {
+                    const sx = (s.x % ROOM.floorW) + ROOM.floorX;
+                    const sy = (s.y % wh) + wy;
+                    ctx.fillStyle = `rgba(255,255,255,${s.opacity * 0.8})`;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, s.size * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Glass Pane Effect
+                const grad = ctx.createLinearGradient(ROOM.floorX, wy, ROOM.floorX, wy + wh);
+                grad.addColorStop(0, 'rgba(34, 211, 238, 0.2)');
+                grad.addColorStop(0.5, 'rgba(34, 211, 238, 0.05)');
+                grad.addColorStop(1, 'rgba(34, 211, 238, 0.2)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(ROOM.floorX, wy, ROOM.floorW, wh);
+
+                // Glass Shine
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ROOM.floorX, wy + 10);
+                ctx.lineTo(ROOM.floorX + ROOM.floorW, wy + 40);
+                ctx.stroke();
+
+                // Top and Bottom Rails
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(ROOM.floorX, wy - 4, ROOM.floorW, 4);
+                ctx.fillRect(ROOM.floorX, wy + wh - 2, ROOM.floorW, 2);
+                
+                return;
+            }
             ctx.fillStyle = C.wall;
             ctx.fillRect(ROOM.floorX, ROOM.floorY - 50, ROOM.floorW, 50);
 
@@ -1236,7 +1279,20 @@
                     }
                     if (a.state === 'relaxed') {
                         a.task = 'Relaxing in Garden';
+                        a.gardenTimer++;
+                        if (a.gardenTimer > a.gardenStayDuration) {
+                            a.targetX = ROOM.floorX + ROOM.floorW;
+                            a.targetY = ROOM.floorY + ROOM.floorH / 2;
+                            a.state = 'walking';
+                            a.targetRoom = 0;
+                            a.gardenTimer = 0;
+                            a.gardenStayDuration = 450 + Math.floor(Math.random() * 1350); 
+                        }
+                    } else {
+                        a.gardenTimer = 0;
                     }
+                } else if (a.room === 0) {
+                    a.gardenTimer = 0;
                 }
 
                 // Hardware failure logic (only in Office) - reduced frequency
