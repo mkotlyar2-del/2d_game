@@ -429,6 +429,8 @@
 
         let W, H, SCALE;
         const TILE = 32;
+        const grassTexture = new Image();
+        grassTexture.src = 'alien_grass_texture.png';
 
         function resize() {
             const wrapper = document.getElementById('gameWrapper');
@@ -608,20 +610,41 @@
         // ═══ DRAWING FUNCTIONS ═══
         function drawFloor() {
             if (currentRoom === 2) {
-                // Space Dome: Alien Blue Grass
-                ctx.fillStyle = '#080b14'; // Dark space base
+                // Space Dome: Alien Blue Grass Texture
+                ctx.fillStyle = '#06131c'; // Darker cyan-blue base
                 ctx.fillRect(ROOM.floorX, ROOM.floorY, ROOM.floorW, ROOM.floorH);
 
-                ctx.strokeStyle = '#22d3ee44';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < ROOM.floorW; i += 20) {
-                    for (let j = 0; j < ROOM.floorH; j += 20) {
-                        const gx = ROOM.floorX + i + Math.sin(Date.now() / 500 + i) * 5;
-                        const gy = ROOM.floorY + j;
+                // Tile the grass texture
+                if (grassTexture.complete) {
+                    const pattern = ctx.createPattern(grassTexture, 'repeat');
+                    ctx.fillStyle = pattern;
+                    ctx.save();
+                    ctx.translate(ROOM.floorX, ROOM.floorY);
+                    ctx.fillRect(0, 0, ROOM.floorW, ROOM.floorH);
+                    ctx.restore();
+                }
+
+                // Procedural Bio-luminescent Strands (Cyan and Light Green-Blue)
+                for (let i = 0; i < ROOM.floorW; i += 25) {
+                    for (let j = 0; j < ROOM.floorH; j += 25) {
+                        const gx = ROOM.floorX + i + Math.sin(Date.now() / 600 + i) * 6;
+                        const gy = ROOM.floorY + j + Math.cos(Date.now() / 800 + j) * 4;
+                        const isAlt = (Math.floor(i / 25) + Math.floor(j / 25)) % 2 === 0;
+                        
+                        ctx.strokeStyle = isAlt ? '#22d3ee55' : '#34d39955';
+                        ctx.lineWidth = 1.5;
                         ctx.beginPath();
-                        ctx.moveTo(gx, gy + 10);
-                        ctx.lineTo(gx + 2, gy - 2);
+                        ctx.moveTo(gx, gy + 12);
+                        ctx.lineTo(gx + 3, gy - 4);
                         ctx.stroke();
+
+                        // Glowing tips
+                        if (Math.random() < 0.1) {
+                            ctx.fillStyle = isAlt ? '#22d3ee' : '#34d399';
+                            ctx.beginPath();
+                            ctx.arc(gx + 3, gy - 4, 1.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
                     }
                 }
                 return;
