@@ -1034,11 +1034,11 @@
             ctx.fillText(agent.name.split('-')[1], x + 10, y - 8);
             if (agent.isManager) ctx.fillText('👑', x + 10, y - 16);
 
-            const statusColors = { working: '#34d399', thinking: '#fbbf24', sleeping: '#64748b', walking: '#22d3ee' };
-            ctx.fillStyle = statusColors[agent.state];
+            const statusColors = { working: '#34d399', thinking: '#fbbf24', sleeping: '#64748b', walking: '#22d3ee', relaxed: '#8b5cf6' };
+            ctx.fillStyle = statusColors[agent.state] || '#64748b';
             ctx.beginPath(); ctx.arc(x + 22, y - 8, 3, 0, Math.PI * 2); ctx.fill();
 
-            if (agent.state === 'thinking') drawThoughtBubble(x, y, agent);
+            if (agent.state === 'thinking' || agent.state === 'relaxed') drawThoughtBubble(x, y, agent);
             else if (agent.state === 'working') drawWorkIndicator(x, y, agent);
             else if (agent.state === 'sleeping') drawSleepZzz(x, y, agent);
         }
@@ -1064,7 +1064,7 @@
             ctx.fillStyle = '#fbbf24';
             ctx.font = '5px "Press Start 2P"';
             ctx.textAlign = 'left';
-            const thinkTexts = ['🤔...', '💡!', '⚡...', '🧮...'];
+            const thinkTexts = agent.state === 'relaxed' ? ['🌸', '🍃', '✨', '🧘'] : ['🤔...', '💡!', '⚡...', '🧮...'];
             ctx.fillText(thinkTexts[(Math.floor(Date.now() / 3000) + parseInt(agent.id.split('_')[1])) % thinkTexts.length], bx + 4, by + 10);
         }
 
@@ -1182,7 +1182,7 @@
                         a.x = a.targetX;
                         a.y = a.targetY;
                         if (Math.abs(a.x - (a.deskX + 10)) < 5 && Math.abs(a.y - (a.deskY + 50)) < 5) {
-                            a.state = Math.random() > 0.3 ? 'working' : 'thinking';
+                            a.state = a.room === 2 ? 'relaxed' : (Math.random() > 0.3 ? 'working' : 'thinking');
                         }
                     }
                     // ROOM BOUNDARIES (adjusted for door triggers)
@@ -1210,9 +1210,9 @@
                         a.targetX = a.deskX + 10;
                         a.targetY = a.deskY + 50;
                     } else if (rand < 0.5) {
-                        a.state = 'thinking';
+                        a.state = a.room === 2 ? 'relaxed' : 'thinking';
                     } else if (rand < 0.9) {
-                        a.state = 'working';
+                        a.state = a.room === 2 ? 'relaxed' : 'working';
                     } else if (rand < 0.95) {
                         // Go to Space Dome to relax if in Office
                         if (a.room === 0) {
@@ -1226,6 +1226,16 @@
                         }
                     } else {
                         a.state = 'sleeping';
+                    }
+                }
+
+                // Restriction: No working in Garden
+                if (a.room === 2) {
+                    if (a.state === 'working' || a.state === 'thinking') {
+                        a.state = 'relaxed';
+                    }
+                    if (a.state === 'relaxed') {
+                        a.task = 'Relaxing in Garden';
                     }
                 }
 
@@ -1539,7 +1549,7 @@
         function updateAgentPanel() {
             const list = document.getElementById('agentList');
             const allWorkers = [...agents, repairman];
-            const statusLabels = { working: 'Працює', thinking: 'Думає', sleeping: 'Спить', walking: 'Іде' };
+            const statusLabels = { working: 'Працює', thinking: 'Думає', sleeping: 'Спить', walking: 'Іде', relaxed: 'Відпочиває' };
 
             // 1. Update the list structure if count changed
             if (list.children.length !== allWorkers.length) {
