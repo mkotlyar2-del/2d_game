@@ -883,21 +883,21 @@
             roundRect(x + 2 + sway, y + 14 - bounce, 16, 14 + breathe, 4);
             ctx.fill();
 
-            // Одяг
+            // Clothing
             const bx = x + 2 + sway;
             const by = y + 14 - bounce;
             const bw = 16;
             const bh = 14 + breathe;
 
-            if (agent.clothingDetail === 1) { // Краватка
+            if (agent.clothingDetail === 1) { // Tie
                 ctx.fillStyle = '#b91c1c';
                 ctx.fillRect(bx + 6, by, 4, 8);
                 ctx.beginPath(); ctx.moveTo(bx + 6, by + 8); ctx.lineTo(bx + 10, by + 8); ctx.lineTo(bx + 8, by + 11); ctx.fill();
-            } else if (agent.clothingDetail === 2) { // Смуги
+            } else if (agent.clothingDetail === 2) { // Stripes
                 ctx.fillStyle = 'rgba(255,255,255,0.2)';
                 ctx.fillRect(bx, by + 4, bw, 3);
                 ctx.fillRect(bx, by + 9, bw, 3);
-            } else if (agent.clothingDetail === 3) { // Підтяжки
+            } else if (agent.clothingDetail === 3) { // Suspenders
                 ctx.fillStyle = darkenColor(bodyColor, 0.4);
                 ctx.fillRect(bx + 3, by, 2, bh);
                 ctx.fillRect(bx + 11, by, 2, bh);
@@ -913,19 +913,19 @@
             ctx.arc(headX, headY, 7, 0, Math.PI * 2);
             ctx.fill();
 
-            // Зачіска
+            // Hair
             if (agent.id !== 'repairman') {
                 ctx.fillStyle = agent.hairColor;
-                if (agent.hairType === 0) { // Коротка
+                if (agent.hairType === 0) { // Short
                     ctx.beginPath(); ctx.arc(headX, headY - 2, 7.5, Math.PI, 0); ctx.fill();
-                } else if (agent.hairType === 2) { // Гостра
+                } else if (agent.hairType === 2) { // Spiky
                     ctx.beginPath();
                     for (let i = 0; i <= 6; i++) {
                         ctx.lineTo(headX - 7.5 + i * 2.5, headY - 2 - (i % 2 === 0 ? 5 : 1));
                     }
                     ctx.lineTo(headX + 7.5, headY - 2);
                     ctx.fill();
-                } else if (agent.hairType === 3) { // Довга
+                } else if (agent.hairType === 3) { // Long
                     ctx.beginPath(); ctx.arc(headX, headY - 2, 7.5, Math.PI, 0); ctx.fill();
                     ctx.fillRect(headX - 7.5, headY - 2, 3, 9);
                     ctx.fillRect(headX + 4.5, headY - 2, 3, 9);
@@ -960,15 +960,15 @@
                 ctx.fillRect(headX - 4, headY - 2, 2, 2);
             }
 
-            // Аксесуари
+            // Accessories
             if (agent.id !== 'repairman') {
-                if (agent.accessory === 1) { // Окуляри
+                if (agent.accessory === 1) { // Glasses
                     ctx.strokeStyle = '#fff';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(headX + 1, headY - 2, 4, 3);
                     ctx.strokeRect(headX + 7, headY - 2, 4, 3);
                     ctx.beginPath(); ctx.moveTo(headX + 5, headY - 0.5); ctx.lineTo(headX + 7, headY - 0.5); ctx.stroke();
-                } else if (agent.accessory === 2) { // Гарнітура
+                } else if (agent.accessory === 2) { // Headset
                     ctx.strokeStyle = '#334155';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(headX, headY, 8.5, Math.PI, 0); ctx.stroke();
@@ -1398,7 +1398,7 @@
             const py = p.y;
             ctx.save();
 
-            // Горщик
+            // Pot
             ctx.fillStyle = C.plantPot;
             if (p.type === 0 || p.type === 1) {
                 ctx.fillRect(px, py + 15, 16, 12);
@@ -1410,8 +1410,8 @@
                 ctx.fillRect(px - 6, py + 17, 28, 4);
             }
 
-            // Рослина
-            if (p.type === 0) { // Папороть
+            // Plant
+            if (p.type === 0) { // Fern
                 ctx.fillStyle = C.plant;
                 for (let i = 0; i < 5; i++) {
                     ctx.beginPath();
@@ -1420,7 +1420,7 @@
                     ctx.quadraticCurveTo(px + 8 + (i - 2) * 5, py + 5, px + 8, py + 15);
                     ctx.fill();
                 }
-            } else if (p.type === 1) { // Кактус
+            } else if (p.type === 1) { // Cactus
                 ctx.fillStyle = C.plant;
                 roundRect(px + 3, py - 15, 10, 30, 5);
                 ctx.fill();
@@ -1432,7 +1432,7 @@
                 for (let i = 0; i < 8; i++) {
                     ctx.fillRect(px + 4 + (i % 3) * 2, py - 10 + i * 4, 1, 1);
                 }
-            } else if (p.type === 2) { // Бонсай
+            } else if (p.type === 2) { // Bonsai
                 ctx.fillStyle = '#451a03';
                 ctx.fillRect(px + 6, py + 5, 4, 15);
                 ctx.beginPath(); ctx.moveTo(px + 6, py + 10); ctx.lineTo(px + 1, py + 5); ctx.lineWidth = 2; ctx.strokeStyle = '#451a03'; ctx.stroke();
@@ -1529,7 +1529,7 @@
             return `rgb(${Math.floor(r * factor)},${Math.floor(g * factor)},${Math.floor(b * factor)})`;
         }
 
-        // ВІДНОВЛЕНІ ФУНКЦІЇ ДЛЯ ІНТЕРФЕЙСУ ПАНЕЛІ
+        // RESTORED FUNCTIONS FOR PANEL INTERFACE
 
         function toggleManager(id, event) {
             if (event) event.stopPropagation();
@@ -1543,13 +1543,13 @@
 
             document.getElementById('agentList').innerHTML = '';
             updateAgentPanel();
-            addLog('system_0', `👑 ${targetAgent.name} призначений менеджером`);
+            addLog('system_0', `👑 ${targetAgent.name} assigned as manager`);
         }
 
         function updateAgentPanel() {
             const list = document.getElementById('agentList');
             const allWorkers = [...agents, repairman];
-            const statusLabels = { working: 'Працює', thinking: 'Думає', sleeping: 'Спить', walking: 'Іде', relaxed: 'Відпочиває' };
+            const statusLabels = { working: 'Working', thinking: 'Thinking', sleeping: 'Sleeping', walking: 'Walking', relaxed: 'Relaxing' };
 
             // 1. Update the list structure if count changed
             if (list.children.length !== allWorkers.length) {
@@ -1560,7 +1560,7 @@
                             <div class="agent-mini-name" style="color:${a.color}">${a.name} ${a.isManager ? '👑' : ''}</div>
                             <div class="agent-mini-status" id="task-${a.id}">${a.task}</div>
                         </div>
-                        <span class="mini-badge ${a.state}" id="state-${a.id}">${statusLabels[a.state] || 'Очікує'}</span>
+                        <span class="mini-badge ${a.state}" id="state-${a.id}">${statusLabels[a.state] || 'Waiting'}</span>
                         ${a.id !== 'repairman' ? `
                         <div class="agent-manager-btn ${a.isManager ? 'active' : ''}" title="Assign as Manager" onclick="toggleManager('${a.id}', event)">
                             ${a.isManager ? '⭐' : '☆'}
@@ -1573,9 +1573,9 @@
             // 2. Update individual status badges and tasks
             allWorkers.forEach(a => {
                 const badge = document.getElementById(`state-${a.id}`);
-                if (badge && badge.innerText !== (statusLabels[a.state] || 'Очікує')) {
+                if (badge && badge.innerText !== (statusLabels[a.state] || 'Waiting')) {
                     badge.className = `mini-badge ${a.state}`;
-                    badge.innerText = statusLabels[a.state] || 'Очікує';
+                    badge.innerText = statusLabels[a.state] || 'Waiting';
                 }
                 const task = document.getElementById(`task-${a.id}`);
                 if (task && task.innerText !== a.task) {
@@ -1599,7 +1599,7 @@
                 currentRoom = n;
             }
             const roomNames = ['The Office', 'Server Core', 'Space Dome'];
-            addLog('system_0', `Перехід до ${roomNames[currentRoom]}`);
+            addLog('system_0', `Switching to ${roomNames[currentRoom]}`);
 
             const btn1 = document.getElementById('switchBtn1');
             const btn2 = document.getElementById('switchBtn2');
