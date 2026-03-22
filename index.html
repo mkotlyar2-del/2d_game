@@ -1862,7 +1862,7 @@
         function updateAgentPanel() {
             const list = document.getElementById('agentList');
             const allWorkers = [...agents, repairman];
-            const statusLabels = { working: 'Working', thinking: 'Thinking', sleeping: 'Sleeping', walking: 'Walking', relaxed: 'Relaxing' };
+            const statusLabels = { working: 'Working', thinking: 'Thinking', sleeping: 'Sleeping', walking: 'Walking', relaxed: 'Relaxing', crazy: 'Panicking' };
 
             // 1. Update the list structure if count changed
             if (list.children.length !== allWorkers.length) {
@@ -2113,7 +2113,7 @@ Execute it and return the result in JSON format according to this schema:
 
             if (found || onPanel) {
                 if (found) {
-                    const statusLabels = { working: '🟢 Working', thinking: '🟡 Thinking', sleeping: '⚪ Sleeping', walking: '🔵 Walking', relaxed: '🟣 Relaxing' };
+                    const statusLabels = { working: '🟢 Working', thinking: '🟡 Thinking', sleeping: '⚪ Sleeping', walking: '🔵 Walking', relaxed: '🟣 Relaxing', crazy: '🛑 Panicking' };
                     const deptNames = rolesData.map(r => r.role);
                     tooltip.innerHTML = `
                         <div class="tt-name" style="color:${found.color}">${found.emoji} ${found.name} ${found.isManager ? '👑' : ''}</div>
