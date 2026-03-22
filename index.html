@@ -1668,7 +1668,7 @@
                     r.x = r.targetX; r.y = r.targetY;
                     if (r.repairTarget) {
                         r.state = 'repairing';
-                        r.repairTimer = 150;
+                        r.repairTimer = 900; // 15 seconds
                         addLog(r.id, `Repairing ${r.repairTarget.id}...`);
                     } else {
                         r.state = 'idle';
@@ -1679,6 +1679,7 @@
                 r.y = Math.max(ROOM.floorY + 5, Math.min(ROOM.floorY + ROOM.floorH - 35, r.y));
             } else if (r.state === 'repairing') {
                 r.repairTimer--;
+                r.task = `Repairing ${r.repairTarget ? r.repairTarget.id.split('_')[0] : ''}... ${Math.floor((1 - r.repairTimer / 900) * 100)}%`;
                 if (r.repairTimer <= 0) {
                     const target = r.repairTarget;
                     target.isBroken = false;
