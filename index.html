@@ -1420,6 +1420,7 @@
 
                 a.walkTimer++;
                 if (a.walkTimer > 300 + Math.random() * 600) {
+                    const oldState = a.state;
                     a.walkTimer = 0;
                     const rand = Math.random();
 
@@ -1454,6 +1455,10 @@
                         }
                     } else {
                         a.state = 'sleeping';
+                    }
+
+                    if (oldState === 'working' && a.state !== 'working' && !isExploded) {
+                        stability += 10;
                     }
                 }
 
