@@ -412,11 +412,44 @@
                 </div>
             </div>
 
-            <!-- Live logs -->
+        <!-- Activity Logs -->
             <div class="panel-section">
                 <div class="panel-title">📜 activity</div>
                 <div id="logList"></div>
             </div>
+        </div>
+
+        <!-- Control Panel UI Overlay -->
+        <div id="controlPanelUI" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; background: rgba(15, 23, 42, 0.98); border: 2px solid #8b5cf6; border-radius: 12px; padding: 24px; z-index: 1000; box-shadow: 0 0 50px rgba(0,0,0,0.9), 0 0 20px rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); font-family: 'Inter', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px;">
+                <h2 style="font-family: 'Press Start 2P', monospace; font-size: 0.85em; color: #8b5cf6; letter-spacing: 1px;">SYSTEM CORE</h2>
+                <button onclick="closeUI()" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.8em; line-height: 1;">&times;</button>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.4); padding: 18px; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.1); margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center;">
+                    <span style="font-size: 0.75em; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Pulsar Stability</span>
+                    <span id="uiStability" style="font-family: 'JetBrains Mono', monospace; color: #22d3ee; font-weight: 700; font-size: 1.1em;">100%</span>
+                </div>
+                <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                    <div id="uiStabilityBar" style="height: 100%; background: linear-gradient(90deg, #8b5cf6, #22d3ee); width: 100%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 92, 246, 0.15); padding: 14px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 0.65em; color: #64748b; margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">Node State</div>
+                    <div id="reactorStatus" style="font-size: 0.8em; color: #34d399; font-weight: 700; font-family: 'JetBrains Mono', monospace;">ACTIVE</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 92, 246, 0.15); padding: 14px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 0.65em; color: #64748b; margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">Sync Rate</div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8em; color: #8b5cf6; font-weight: 700;">8.4 MHz</div>
+                </div>
+            </div>
+            
+            <button onclick="addLog('system_0', 'Manual override attempted... access denied.')" style="width: 100%; padding: 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(139, 92, 246, 0.3); color: #8b5cf6; border-radius: 8px; font-family: 'Press Start 2P', monospace; font-size: 0.5em; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                INITIATE STABILITY SYNC
+            </button>
         </div>
     </div>
 
@@ -2031,8 +2064,8 @@ Execute it and return the result in JSON format according to this schema:
         const tooltip = document.getElementById('tooltip');
         canvas.addEventListener('mousemove', e => {
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
+            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const my = (e.clientY - rect.top) * (canvas.height / rect.height);
 
             let found = null;
             agents.forEach(a => {
@@ -2041,24 +2074,65 @@ Execute it and return the result in JSON format according to this schema:
                 }
             });
 
-            if (found) {
-                const statusLabels = { working: '🟢 Working', thinking: '🟡 Thinking', sleeping: '⚪ Sleeping', walking: '🔵 Walking' };
-                const deptNames = rolesData.map(r => r.role);
-                tooltip.innerHTML = `
-                    <div class="tt-name" style="color:${found.color}">${found.emoji} ${found.name} ${found.isManager ? '👑' : ''}</div>
-                    <div class="tt-task" style="color:#94a3b8">[ Dept: ${deptNames[found.department]} ]</div>
-                    <div class="tt-task">${found.role} • ${statusLabels[found.state]}</div>
-                    <div class="tt-task" style="margin-top:4px">📌 ${found.task}</div>
-                `;
-                tooltip.style.left = (e.clientX + 16) + 'px';
-                tooltip.style.top = (e.clientY - 60) + 'px';
-                tooltip.classList.add('visible');
+            // Check Control Panel Hover in Room 1
+            let onPanel = false;
+            if (currentRoom === 1) {
+                const px = ROOM.floorX + 30;
+                const py = ROOM.floorY - 45;
+                if (mx > px && mx < px + 60 && my > py && my < py + 40) {
+                    onPanel = true;
+                }
+            }
+
+            if (found || onPanel) {
+                if (found) {
+                    const statusLabels = { working: '🟢 Working', thinking: '🟡 Thinking', sleeping: '⚪ Sleeping', walking: '🔵 Walking', relaxed: '🟣 Relaxing' };
+                    const deptNames = rolesData.map(r => r.role);
+                    tooltip.innerHTML = `
+                        <div class="tt-name" style="color:${found.color}">${found.emoji} ${found.name} ${found.isManager ? '👑' : ''}</div>
+                        <div class="tt-task" style="color:#94a3b8">[ Dept: ${deptNames[found.department]} ]</div>
+                        <div class="tt-task">${found.role} • ${statusLabels[found.state]}</div>
+                        <div class="tt-task" style="margin-top:4px">📌 ${found.task}</div>
+                    `;
+                    tooltip.style.left = (e.clientX + 16) + 'px';
+                    tooltip.style.top = (e.clientY - 60) + 'px';
+                    tooltip.classList.add('visible');
+                }
                 canvas.style.cursor = 'pointer';
             } else {
                 tooltip.classList.remove('visible');
                 canvas.style.cursor = 'default';
             }
         });
+
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            if (currentRoom === 1) {
+                const px = ROOM.floorX + 30;
+                const py = ROOM.floorY - 45;
+                if (mx > px && mx < px + 60 && my > py && my < py + 40) {
+                    openUI();
+                }
+            }
+        });
+
+        function openUI() {
+            const ui = document.getElementById('controlPanelUI');
+            const perc = Math.floor(stability);
+            document.getElementById('uiStability').textContent = perc + '%';
+            document.getElementById('uiStabilityBar').style.width = perc + '%';
+            document.getElementById('reactorStatus').textContent = isExploded ? 'CRITICAL' : (stability < 30 ? 'UNSTABLE' : 'ACTIVE');
+            document.getElementById('reactorStatus').style.color = isExploded ? 'var(--red)' : (stability < 30 ? 'var(--yellow)' : 'var(--green)');
+            ui.style.display = 'block';
+            addLog('system_0', 'Accessing System Core Interface...');
+        }
+
+        function closeUI() {
+            document.getElementById('controlPanelUI').style.display = 'none';
+        }
 
         addLog('system_0', '🚀 Initializing Neural Network...');
         setTimeout(() => addLog('system_0', `✅ ${agents.length + 1} agents synchronized`), 800);
