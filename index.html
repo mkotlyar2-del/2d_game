@@ -1793,7 +1793,11 @@
             ctx.fillText(`STABILITY: ${Math.floor(stability)}%`, barX - 10, barY + 8);
 
             // Screen Flash
-            if (flashTimer > 0) {
+            if (isExploded) {
+                const pulse = 0.12 + Math.sin(Date.now() / 250) * 0.08;
+                ctx.fillStyle = `rgba(239, 68, 68, ${pulse})`;
+                ctx.fillRect(0, 0, W, H);
+            } else if (flashTimer > 0) {
                 ctx.fillStyle = `rgba(239, 68, 68, ${flashTimer / 60})`;
                 ctx.fillRect(0, 0, W, H);
                 flashTimer--;
