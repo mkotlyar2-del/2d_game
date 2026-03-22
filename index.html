@@ -1457,6 +1457,12 @@
                         a.state = 'sleeping';
                     }
 
+                    if (a.isBroken) {
+                        if (a.state === 'working' || a.state === 'thinking') {
+                            a.state = 'walking';
+                        }
+                    }
+
                     if (oldState === 'working' && a.state !== 'working' && !isExploded) {
                         stability += 5;
                     }
@@ -1489,7 +1495,12 @@
                 if (a.state === 'working' && a.room === 0 && !a.isBroken && Math.random() < 0.0001) {
                     a.isBroken = true;
                     a.task = 'SYSTEM FAILURE';
+                    a.state = 'walking'; // Stop working immediately
                     addLog(a.id, '🔴 Hardware failure detected!');
+                }
+                if (a.isBroken) {
+                    if (a.state === 'working' || a.state === 'thinking') a.state = 'walking';
+                    a.task = '🔴 CRITICAL FAILURE';
                 }
                 a.frame++;
 
