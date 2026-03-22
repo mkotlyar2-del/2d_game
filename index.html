@@ -1419,7 +1419,7 @@
                 }
 
                 a.walkTimer++;
-                if (a.walkTimer > 300 + Math.random() * 600) {
+                if (a.walkTimer > 800 + Math.random() * 1200) {
                     const oldState = a.state;
                     a.walkTimer = 0;
                     const rand = Math.random();
@@ -1458,7 +1458,7 @@
                     }
 
                     if (oldState === 'working' && a.state !== 'working' && !isExploded) {
-                        stability += 10;
+                        stability += 5;
                     }
                 }
 
