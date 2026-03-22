@@ -514,6 +514,7 @@
         let isExploded = false;
         let flashTimer = 0;
         let pulsarEnergy = 0;
+        let stabilityTimer = 0;
 
         // ═══ 15 AGENTS GENERATION (3 DEPARTMENTS) ═══
         const agents = [];
@@ -1356,36 +1357,29 @@
             ctx.globalAlpha = 1;
         }
 
-        function updateAgents() {
-            // Collective Ship Stability Logic
-            if (!isExploded) {
-                let collectiveGain = 0;
-                let collectiveLoss = 0;
-                let someoneSlacking = false;
-
-                agents.forEach(a => {
-                    const isProductive = a.state === 'working' || a.state === 'thinking';
-                    if (isProductive) {
-                        collectiveGain += 0.006;
-                    } else {
-                        someoneSlacking = true;
-                        if (a.state === 'relaxed' || a.state === 'sleeping') collectiveLoss += 0.025;
-                        else collectiveLoss += 0.008; // Walking/Idling
-                    }
-                });
-
-                // Rule: If someone is not working, the stability will NOT rise.
-                if (someoneSlacking) {
-                    stability -= collectiveLoss;
-                } else {
-                    stability += collectiveGain;
-                }
-
-                if (stability > 100) stability = 100;
-                if (stability < 0) stability = 0;
-                if (stability === 0) triggerExplosion();
+        function updateStability() {
+            if (isExploded) return;
+            
+            stabilityTimer++;
+            if (stabilityTimer >= 30) { // 30 frames = 0.5s
+                stabilityTimer = 0;
+                stability -= 1;
             }
 
+            // Agents working restores stability
+            agents.forEach(a => {
+                if (a.state === 'working' || a.state === 'thinking') {
+                    stability += 0.001;
+                }
+            });
+
+            if (stability > 100) stability = 100;
+            if (stability < 0) stability = 0;
+            if (stability === 0) triggerExplosion();
+        }
+
+        function updateAgents() {
+            updateStability();
             agents.forEach(a => {
                 if (isExploded) {
                     a.state = 'crazy';
