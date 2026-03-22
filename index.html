@@ -610,6 +610,12 @@
 
         let aliens = [];
         let combatParticles = [];
+        
+        const warHeart = {
+            x: 0, y: 0, health: 1000, maxHealth: 1000, lastHit: 0
+        };
+
+        let giantMonster = null;
 
         const stars = Array.from({ length: 150 }, () => ({
             x: Math.random() * 2000,
@@ -634,6 +640,9 @@
                 { x: ROOM.floorX + 2 * ROOM.floorW / 3 - 15, y: ROOM.floorY + ROOM.floorH - 50, type: 0, isPlant: true },
                 { x: ROOM.floorX + 25, y: ROOM.floorY + ROOM.floorH - 50, type: 1, isPlant: true }
             ];
+
+            warHeart.x = ROOM.floorX + ROOM.floorW / 2;
+            warHeart.y = ROOM.floorY + ROOM.floorH / 2;
 
             const mapCenterX = ROOM.floorX + ROOM.floorW / 2;
             const mapCenterY = ROOM.floorY + ROOM.floorY / 2;
@@ -1011,8 +1020,8 @@
             const y = Math.round(agent.y);
             const t = Date.now() / 1000;
 
-            const bounce = agent.state === 'walking' ? Math.abs(Math.sin(t * 12)) * 4 : Math.sin(t * 2 + agent.frame * 0.1) * 1;
-            const sway = agent.state === 'walking' ? Math.sin(t * 12) * 2 : 0;
+            const bounce = agent.state === 'downed' ? 0 : (agent.state === 'walking' ? Math.abs(Math.sin(t * 12)) * 4 : Math.sin(t * 2 + agent.frame * 0.1) * 1);
+            const sway = agent.state === 'downed' ? 0 : (agent.state === 'walking' ? Math.sin(t * 12) * 2 : 0);
             const breathe = Math.sin(t * 2 + agent.frame * 0.1) * 0.5;
             const tilt = agent.state === 'walking' ? 0.05 : (agent.state === 'thinking' ? Math.sin(t * 0.5) * 0.05 : 0);
 
@@ -1020,9 +1029,15 @@
             const shakeY = agent.state === 'crazy' ? (Math.random() - 0.5) * 4 : 0;
 
             ctx.save();
-            ctx.translate(x + 10 + shakeX, y + 32 + shakeY);
-            ctx.rotate(tilt);
-            ctx.translate(-(x + 10), -(y + 32));
+            if (agent.state === 'downed') {
+                ctx.translate(x + 10, y + 25);
+                ctx.rotate(Math.PI / 2);
+                ctx.translate(-(x + 10), -(y + 25));
+            } else {
+                ctx.translate(x + 10 + shakeX, y + 32 + shakeY);
+                ctx.rotate(tilt);
+                ctx.translate(-(x + 10), -(y + 32));
+            }
 
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.beginPath();
@@ -1156,7 +1171,9 @@
             }
 
             ctx.fillStyle = '#1e293b';
-            if (agent.state === 'walking') {
+            if (agent.state === 'downed') {
+                // No legs drawn or drawn flat
+            } else if (agent.state === 'walking') {
                 const legMove = Math.sin(t * 12) * 6;
                 ctx.fillRect(x + 5 + sway, y + 28 - bounce, 4, 6 + legMove);
                 ctx.fillRect(x + 11 + sway, y + 28 - bounce, 4, 6 - legMove);
@@ -1361,6 +1378,79 @@
                 ctx.fill();
             }
             ctx.globalAlpha = 1;
+
+            if (warHeart.health > 0) {
+                drawHeart(warHeart.x, warHeart.y);
+            }
+        }
+
+        function drawHeart(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            const pulse = 1 + Math.sin(Date.now() / 200) * 0.15;
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(0, 5);
+            ctx.bezierCurveTo(-15, -15, -30, 0, 0, 25);
+            ctx.bezierCurveTo(30, 0, 15, -15, 0, 5);
+            ctx.fill();
+            ctx.strokeStyle = '#7f1d1d';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-5, 0); ctx.lineTo(-12, -8);
+            ctx.moveTo(5, 0); ctx.lineTo(12, -8);
+            ctx.stroke();
+            ctx.globalAlpha = 0.2 + Math.sin(Date.now() / 100) * 0.1;
+            ctx.fillStyle = '#f87171';
+            ctx.beginPath(); ctx.arc(0, 5, 20, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(x - 50, y + 40, 100, 8);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(x - 50, y + 40, (warHeart.health / warHeart.maxHealth) * 100, 8);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(x - 50, y + 40, 100, 8);
+            ctx.fillStyle = '#fff';
+            ctx.font = '8px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillText('HEART OF WAR', x, y + 65);
+        }
+
+        function drawGiantMonster(m) {
+            ctx.save();
+            ctx.translate(m.x, m.y);
+            const breathe = Math.sin(Date.now() / 400) * 5;
+            ctx.scale(m.scale, m.scale);
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 40, 30 + breathe, 0, 0, Math.PI * 2);
+            ctx.fill();
+            for (let i = 0; i < 5; i++) {
+                const ex = Math.sin(i * 123 + Date.now()/1000) * 20;
+                const ey = Math.cos(i * 456) * 15;
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(ex, ey, 3 + Math.sin(Date.now()/200 + i) * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 8;
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2 + Math.sin(Date.now() / 500 + i);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                const tx = Math.cos(ang) * (60 + breathe);
+                const ty = Math.sin(ang) * (60 + breathe);
+                ctx.quadraticCurveTo(Math.cos(ang+0.5)*30, Math.sin(ang+0.5)*30, tx, ty);
+                ctx.stroke();
+            }
+            ctx.restore();
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 8px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillText('VOID HUNTER', m.x, m.y - 120);
         }
 
         function drawAlien(al) {
@@ -1399,35 +1489,110 @@
         }
 
         function updateCombat() {
+            // Update Giant Monster if it exists
+            if (giantMonster) {
+                const m = giantMonster;
+                
+                // Targeting logic based on room
+                if (m.room === 3) {
+                    // Move towards exit to Dome (Room 2)
+                    m.targetX = ROOM.floorX;
+                    m.targetY = ROOM.floorY + ROOM.floorH / 2;
+                    if (Math.sqrt((m.x - m.targetX)**2 + (m.y - m.targetY)**2) < 50) {
+                        m.room = 2; m.x = ROOM.floorX + ROOM.floorW - 100;
+                        addLog('system_0', '⚠️ VOID MONSTER HAS ENTERED THE SPACE DOME!');
+                    }
+                } else if (m.room === 2) {
+                    // Move towards door to Office (Room 0)
+                    m.targetX = ROOM.floorX + ROOM.floorW;
+                    m.targetY = ROOM.floorY + ROOM.floorH / 2;
+                    if (Math.sqrt((m.x - m.targetX)**2 + (m.y - m.targetY)**2) < 50) {
+                        m.room = 0; m.x = ROOM.floorX + ROOM.floorW - 100;
+                        addLog('system_0', '🚨 CRITICAL: VOID MONSTER HAS REACHED THE OFFICE!');
+                    }
+                } else {
+                    // Hunt agents in Office
+                    let target = null;
+                    let minDist = 2000;
+                    agents.forEach(a => {
+                        if (a.room === 0 && a.state !== 'downed') {
+                            const d = Math.sqrt((a.x - m.x)**2 + (a.y - m.y)**2);
+                            if (d < minDist) { minDist = d; target = a; }
+                        }
+                    });
+
+                    if (target) {
+                        m.targetX = target.x;
+                        m.targetY = target.y;
+                        if (minDist < 40) {
+                            target.state = 'downed';
+                            target.health = 0;
+                            target.task = 'DEFEATED';
+                            addLog('system_0', `💀 VOID HUNTER HAS CONSUMED ${target.name.toUpperCase()}!`);
+                            if (Math.random() < 0.5) spawnParticle(m, target, '#1e293b');
+                        }
+                    }
+
+                    // Scare nearby agents
+                    agents.forEach(a => {
+                        if (a.room === 0 && a.state !== 'downed' && Math.sqrt((a.x - m.x)**2 + (a.y - m.y)**2) < 200) {
+                            a.state = 'crazy';
+                            a.task = 'RUN!!!';
+                        }
+                    });
+                }
+
+                // Move
+                const dx = m.targetX - m.x;
+                const dy = m.targetY - m.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    m.x += (dx / dist) * 1.5;
+                    m.y += (dy / dist) * 1.5;
+                }
+            }
+
             if (currentRoom !== 3) return;
 
             // Spawn aliens
-            if (aliens.length < 8 && Math.random() < 0.02) {
+            if (aliens.length < 10 && Math.random() < 0.03) {
                 aliens.push({
-                    x: ROOM.floorX + (Math.random() > 0.5 ? 0 : ROOM.floorW),
+                    x: ROOM.floorX + (Math.random() > 0.5 ? -20 : ROOM.floorW + 20),
                     y: ROOM.floorY + Math.random() * ROOM.floorH,
-                    health: 60, maxHealth: 60, speed: 1.5
+                    health: 60, maxHealth: 60, speed: 1.5,
+                    objective: Math.random() < 0.4 ? 'heart' : 'warrior'
                 });
             }
 
             // Update Aliens
             aliens.forEach(al => {
-                let nearest = null;
-                let minDist = 1000;
+                let nearestAgent = null;
+                let minDistAgent = 1000;
                 agents.forEach(a => {
                     if (a.room === 3) {
                         const d = Math.sqrt((a.x - al.x) ** 2 + (a.y - al.y) ** 2);
-                        if (d < minDist) { minDist = d; nearest = a; }
+                        if (d < minDistAgent) { minDistAgent = d; nearestAgent = a; }
                     }
                 });
 
-                if (nearest) {
-                    if (minDist > 35) {
-                        al.x += (nearest.x - al.x) / minDist * al.speed;
-                        al.y += (nearest.y - al.y) / minDist * al.speed;
+                const distToHeart = Math.sqrt((al.x - warHeart.x)**2 + (al.y - warHeart.y)**2);
+
+                // Alien Priority: Attack heart if objective says so or if close
+                if (warHeart.health > 0 && (al.objective === 'heart' || distToHeart < 150) && minDistAgent > 100) {
+                    if (distToHeart > 40) {
+                        al.x += (warHeart.x - al.x) / distToHeart * al.speed;
+                        al.y += (warHeart.y - al.y) / distToHeart * al.speed;
                     } else {
-                        nearest.health -= 0.15;
-                        if (Math.random() < 0.1) spawnParticle(al, nearest, '#8b5cf6');
+                        warHeart.health -= 0.5;
+                        if (Math.random() < 0.1) spawnParticle(al, warHeart, '#ef4444');
+                    }
+                } else if (nearestAgent) {
+                    if (minDistAgent > 35) {
+                        al.x += (nearestAgent.x - al.x) / minDistAgent * al.speed;
+                        al.y += (nearestAgent.y - al.y) / minDistAgent * al.speed;
+                    } else {
+                        nearestAgent.health -= 0.15;
+                        if (Math.random() < 0.1) spawnParticle(al, nearestAgent, '#8b5cf6');
                     }
                 }
             });
@@ -1436,44 +1601,43 @@
             agents.forEach(a => {
                 if (a.room === 3) {
                     if (a.role === 'Warrior') {
-                        let nearest = null;
-                        let minDist = 1000;
+                        let nearestAlien = null;
+                        let minDistAlien = 1000;
                         aliens.forEach(al => {
                             const d = Math.sqrt((al.x - a.x) ** 2 + (al.y - a.y) ** 2);
-                            if (d < minDist) { minDist = d; nearest = al; }
+                            if (d < minDistAlien) { minDistAlien = d; nearestAlien = al; }
                         });
 
-                        if (nearest) {
+                        // Priority: Defend heart if aliens are close to it
+                        const invadersNearHeart = aliens.find(al => Math.sqrt((al.x - warHeart.x)**2 + (al.y - warHeart.y)**2) < 100);
+
+                        if (invadersNearHeart) {
+                            a.targetX = invadersNearHeart.x; a.targetY = invadersNearHeart.y;
+                            a.state = 'walking';
+                        } else if (nearestAlien) {
                             const attackDist = a.warriorType === 'gun' ? 180 : 35;
                             const followDist = a.warriorType === 'gun' ? 150 : 10;
                             
-                            if (minDist > attackDist) {
-                                a.targetX = nearest.x; a.targetY = nearest.y;
+                            if (minDistAlien > attackDist) {
+                                a.targetX = nearestAlien.x; a.targetY = nearestAlien.y;
                                 a.state = 'walking';
                             } else {
                                 a.state = 'working';
-                                nearest.health -= a.warriorType === 'gun' ? 0.3 : 0.6;
+                                nearestAlien.health -= a.warriorType === 'gun' ? 0.3 : 0.6;
                                 if (Math.random() < (a.warriorType === 'gun' ? 0.15 : 0.3)) {
-                                    spawnParticle(a, nearest, a.warriorType === 'gun' ? '#fbbf24' : '#f87171');
+                                    spawnParticle(a, nearestAlien, a.warriorType === 'gun' ? '#fbbf24' : '#f87171');
                                 }
                                 a.task = a.warriorType === 'gun' ? 'Suppressing Fire' : 'Melee Combat';
                                 
-                                // Maintain distance if gunner
-                                if (a.warriorType === 'gun' && minDist < followDist) {
-                                    a.targetX = a.x + (a.x - nearest.x);
-                                    a.targetY = a.y + (a.y - nearest.y);
+                                if (a.warriorType === 'gun' && minDistAlien < followDist) {
+                                    a.targetX = a.x + (a.x - nearestAlien.x);
+                                    a.targetY = a.y + (a.y - nearestAlien.y);
                                     a.state = 'walking';
                                 }
                             }
-                        } else {
-                            a.task = 'Patrolling';
-                            if (Math.random() < 0.01) {
-                                a.targetX = ROOM.floorX + Math.random() * ROOM.floorW;
-                                a.targetY = ROOM.floorY + Math.random() * ROOM.floorH;
-                                a.state = 'walking';
-                            }
                         }
                     } else if (a.role === 'Medic') {
+                        // ... Medic logic stays similar ...
                         let wounded = null;
                         let maxWound = 0;
                         agents.forEach(other => {
@@ -1488,26 +1652,25 @@
                             if (d > 50) {
                                 a.targetX = wounded.x; a.targetY = wounded.y;
                                 a.state = 'walking';
-                                a.task = 'Healing...';
                             } else {
-                                a.state = 'thinking'; // Reusing 'thinking' for healing stance
+                                a.state = 'thinking';
                                 wounded.health += 0.25;
                                 if (Math.random() < 0.15) spawnParticle(a, wounded, '#34d399');
                                 a.task = `Healing ${wounded.name}`;
-                            }
-                        } else {
-                            a.task = 'Ready';
-                            if (Math.random() < 0.01) {
-                                a.targetX = ROOM.floorX + Math.random() * ROOM.floorW;
-                                a.targetY = ROOM.floorY + Math.random() * ROOM.floorH;
-                                a.state = 'walking';
                             }
                         }
                     }
                 }
             });
 
-            aliens = aliens.filter(al => al.health > 0);
+            // Check Heart Death -> Spawn Monster
+            if (warHeart.health <= 0 && !giantMonster) {
+                addLog('system_0', '🔴 HEART OF WAR HAS COLLAPSED!');
+                giantMonster = {
+                    x: warHeart.x, y: warHeart.y, targetX: warHeart.x, targetY: warHeart.y,
+                    room: 3, scale: 1.5, health: 5000, maxHealth: 5000
+                };
+            }
             agents.forEach(a => {
                 if (a.room === 3) {
                     if (a.health <= 0) {
@@ -2068,6 +2231,11 @@
             } else if (currentRoom === 3) {
                 drawWarZone();
                 aliens.forEach(al => drawAlien(al));
+            }
+
+            // Draw Giant Monster if in current room
+            if (giantMonster && giantMonster.room === currentRoom) {
+                drawGiantMonster(giantMonster);
             }
 
             // Stability UI
