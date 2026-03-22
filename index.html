@@ -381,6 +381,9 @@
                 <button id="switchBtn2" onclick="goToRoom(2)"
                     style="background:var(--cyan); color:white; border:none; padding:4px 10px; border-radius:4px; font-family:'Press Start 2P', monospace; font-size:0.5em; cursor:pointer; margin-right:15px; box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);">SPACE
                     DOME</button>
+                <button id="switchBtn3" onclick="goToRoom(3)"
+                    style="background:var(--red); color:white; border:none; padding:4px 10px; border-radius:4px; font-family:'Press Start 2P', monospace; font-size:0.5em; cursor:pointer; margin-right:15px; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);">WAR
+                    ZONE</button>
                 <span>Agents: <span class="metric-val" id="agentCount">16</span></span>
                 <span>Tasks: <span class="metric-val" id="taskCount">0</span></span>
                 <span id="clock">--:--:--</span>
@@ -559,6 +562,26 @@
             }
         }
 
+        // ═══ WAR ZONE AGENTS (Warriors & Medics) ═══
+        for (let i = 0; i < 4; i++) {
+            const isMelee = i % 2 === 0;
+            agents.push({
+                id: `warrior_${i + 1}`, name: isMelee ? `GLA-${i + 1}` : `ARC-${i + 1}`, emoji: isMelee ? '🗡️' : '🔫', color: '#f87171', role: 'Warrior', 
+                warriorType: isMelee ? 'melee' : 'gun', x: 0, y: 0, 
+                targetX: 0, targetY: 0, deskX: -100, deskY: -100, state: 'walking', frame: Math.floor(Math.random() * 100), direction: 0, task: 'Patrolling', walkTimer: 0, 
+                bodyColor: isMelee ? '#b91c1c' : '#7f1d1d', skinColor: '#fde68a', hairColor: '#111827', hairType: 1, department: 3, room: 3, targetRoom: 3, 
+                health: 120, maxHealth: 120, combatTimer: 0
+            });
+        }
+        for (let i = 0; i < 2; i++) {
+            agents.push({
+                id: `medic_${i + 1}`, name: `DOC-${i + 1}`, emoji: '💉', color: '#6ee7b7', role: 'Medic', x: 0, y: 0, 
+                targetX: 0, targetY: 0, deskX: -100, deskY: -100, state: 'walking', frame: Math.floor(Math.random() * 100), direction: 0, task: 'Ready', walkTimer: 0, 
+                bodyColor: '#10b981', skinColor: '#fef3c7', hairColor: '#fff', hairType: 2, department: 3, room: 3, targetRoom: 3, 
+                health: 80, maxHealth: 80, combatTimer: 0
+            });
+        }
+
         const repairman = {
             id: 'repairman',
             name: 'TECH-FIX',
@@ -585,6 +608,9 @@
             { id: 'bed_8', x: 400, y: 220, occupiedBy: null }
         ];
 
+        let aliens = [];
+        let combatParticles = [];
+
         const stars = Array.from({ length: 150 }, () => ({
             x: Math.random() * 2000,
             y: Math.random() * 2000,
@@ -610,9 +636,9 @@
             ];
 
             const mapCenterX = ROOM.floorX + ROOM.floorW / 2;
-            const mapCenterY = ROOM.floorY + ROOM.floorH / 2;
+            const mapCenterY = ROOM.floorY + ROOM.floorY / 2;
 
-            const deptWidth = ROOM.floorW / rolesData.length;
+            const deptWidth = ROOM.floorW / 3; // Office has 3 dept areas
 
             agents.forEach((a, index) => {
                 const posInDept = index % 5;
@@ -628,14 +654,26 @@
                 const deptCenterX = ROOM.floorX + deptWidth * a.department + deptWidth / 2;
                 const deptCenterY = ROOM.floorY + ROOM.floorH / 2 - 20;
 
-                a.deskX = deptCenterX + offsets[posInDept].x - 25;
-                a.deskY = deptCenterY + offsets[posInDept].y;
+                if (a.department < 3) {
+                    a.deskX = deptCenterX + offsets[posInDept].x - 25;
+                    a.deskY = deptCenterY + offsets[posInDept].y;
+                } else {
+                    a.deskX = -1000;
+                    a.deskY = -1000;
+                }
 
                 if (a.x === 0 && a.y === 0) {
-                    a.x = mapCenterX;
-                    a.y = mapCenterY;
-                    a.targetX = a.deskX + 10;
-                    a.targetY = a.deskY + 50;
+                    if (a.room === 3) {
+                        a.x = ROOM.floorX + 100 + Math.random() * (ROOM.floorW - 200);
+                        a.y = ROOM.floorY + 100 + Math.random() * (ROOM.floorH - 200);
+                        a.targetX = a.x;
+                        a.targetY = a.y;
+                    } else {
+                        a.x = mapCenterX;
+                        a.y = mapCenterY;
+                        a.targetX = a.deskX + 10;
+                        a.targetY = a.deskY + 50;
+                    }
                     a.state = 'walking';
                 }
             });
@@ -1045,6 +1083,31 @@
                 }
             }
 
+            // --- Specialized War Zone Gear ---
+            if (agent.role === 'Warrior') {
+                ctx.fillStyle = '#1e293b'; // Helmet
+                ctx.fillRect(headX - 8, headY - 11, 16, 12);
+                ctx.fillStyle = '#ef4444'; // Visor
+                ctx.fillRect(headX - 6, headY - 7, 12, 3);
+                
+                // --- Weapons ---
+                ctx.fillStyle = agent.warriorType === 'gun' ? '#475569' : '#94a3b8';
+                if (agent.warriorType === 'gun') {
+                    ctx.fillRect(x + 18 + sway, y + 14 - bounce, 10, 4); // Gun barrel
+                    ctx.fillRect(x + 22 + sway, y + 18 - bounce, 2, 4); // Grip
+                } else {
+                    ctx.fillRect(x + 18 + sway, y + 4 - bounce, 2, 16); // Blade
+                    ctx.fillStyle = '#451a03'; // Hilt
+                    ctx.fillRect(x + 16 + sway, y + 16 - bounce, 6, 2);
+                }
+            } else if (agent.role === 'Medic') {
+                ctx.fillStyle = '#f8fafc'; // White hat
+                ctx.fillRect(headX - 7, headY - 13, 14, 10);
+                ctx.fillStyle = '#10b981'; // Green cross
+                ctx.fillRect(headX - 1, headY - 11, 2, 6);
+                ctx.fillRect(headX - 3, headY - 9, 6, 2);
+            }
+
             if (agent.id === 'repairman') {
                 ctx.fillStyle = '#475569';
                 ctx.fillRect(headX - 8, headY - 10, 16, 6);
@@ -1112,6 +1175,15 @@
                 ctx.fillRect(x - 2 + sway, y + 22 - bounce + type1, 4, 3);
                 ctx.fillRect(x + 18 + sway, y + 22 - bounce + type2, 4, 3);
             } else if (agent.state === 'walking') {
+
+            // Health bar for combat zones
+            if (agent.room === 3) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(x, y - 30, 20, 3);
+                const hpRatio = (agent.health || 0) / (agent.maxHealth || 100);
+                ctx.fillStyle = hpRatio > 0.5 ? '#10b981' : (hpRatio > 0.25 ? '#fbbf24' : '#ef4444');
+                ctx.fillRect(x, y - 30, 20 * hpRatio, 3);
+            }
                 const armSwing = Math.sin(t * 12) * 8;
                 ctx.fillRect(x - 2 + sway, y + 16 - bounce, 4, 8 + armSwing);
                 ctx.fillRect(x + 18 + sway, y + 16 - bounce, 4, 8 - armSwing);
@@ -1261,6 +1333,192 @@
                 ctx.fill();
             }
             ctx.restore();
+        }
+
+        function drawWarZone() {
+            // Dark, desolate battle ground
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(ROOM.floorX, ROOM.floorY, ROOM.floorW, ROOM.floorH);
+
+            // Craters and debris
+            ctx.fillStyle = '#1e293b';
+            for (let i = 0; i < 15; i++) {
+                const rx = ROOM.floorX + (Math.sin(i * 1234) * 0.5 + 0.5) * ROOM.floorW;
+                const ry = ROOM.floorY + (Math.cos(i * 5678) * 0.5 + 0.5) * ROOM.floorH;
+                ctx.beginPath();
+                ctx.ellipse(rx, ry, 20 + Math.sin(i) * 10, 10 + Math.cos(i) * 5, Math.sin(i), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Occasional red glow/smoke
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = '#ef4444';
+            for (let i = 0; i < 5; i++) {
+                const sx = ROOM.floorX + (Math.sin(Date.now() / 2000 + i) * 0.5 + 0.5) * ROOM.floorW;
+                const sy = ROOM.floorY + (Math.cos(Date.now() / 3000 + i) * 0.5 + 0.5) * ROOM.floorH;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 60, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawAlien(al) {
+            ctx.save();
+            ctx.translate(al.x, al.y);
+            
+            // Alien body (Spider-like/Tentacled)
+            ctx.fillStyle = '#8b5cf6';
+            ctx.beginPath();
+            ctx.arc(10, 10, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.arc(6, 8, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(14, 8, 2, 0, Math.PI * 2); ctx.fill();
+            
+            // Tentacles/Legs
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 2;
+            for(let i=0; i<6; i++) {
+                const ang = (i / 6) * Math.PI * 2 + Math.sin(Date.now()/200 + i);
+                ctx.beginPath();
+                ctx.moveTo(10, 10);
+                ctx.lineTo(10 + Math.cos(ang) * 12, 10 + Math.sin(ang) * 12);
+                ctx.stroke();
+            }
+            
+            // Health bar
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, -10, 20, 3);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(0, -10, (al.health / al.maxHealth) * 20, 3);
+            
+            ctx.restore();
+        }
+
+        function updateCombat() {
+            if (currentRoom !== 3) return;
+
+            // Spawn aliens
+            if (aliens.length < 8 && Math.random() < 0.02) {
+                aliens.push({
+                    x: ROOM.floorX + (Math.random() > 0.5 ? 0 : ROOM.floorW),
+                    y: ROOM.floorY + Math.random() * ROOM.floorH,
+                    health: 60, maxHealth: 60, speed: 1.5
+                });
+            }
+
+            // Update Aliens
+            aliens.forEach(al => {
+                let nearest = null;
+                let minDist = 1000;
+                agents.forEach(a => {
+                    if (a.room === 3) {
+                        const d = Math.sqrt((a.x - al.x) ** 2 + (a.y - al.y) ** 2);
+                        if (d < minDist) { minDist = d; nearest = a; }
+                    }
+                });
+
+                if (nearest) {
+                    if (minDist > 35) {
+                        al.x += (nearest.x - al.x) / minDist * al.speed;
+                        al.y += (nearest.y - al.y) / minDist * al.speed;
+                    } else {
+                        nearest.health -= 0.15;
+                        if (Math.random() < 0.1) spawnParticle(al, nearest, '#8b5cf6');
+                    }
+                }
+            });
+
+            // Update Agents in War Zone
+            agents.forEach(a => {
+                if (a.room === 3) {
+                    if (a.role === 'Warrior') {
+                        let nearest = null;
+                        let minDist = 1000;
+                        aliens.forEach(al => {
+                            const d = Math.sqrt((al.x - a.x) ** 2 + (al.y - a.y) ** 2);
+                            if (d < minDist) { minDist = d; nearest = al; }
+                        });
+
+                        if (nearest) {
+                            const attackDist = a.warriorType === 'gun' ? 180 : 35;
+                            const followDist = a.warriorType === 'gun' ? 150 : 10;
+                            
+                            if (minDist > attackDist) {
+                                a.targetX = nearest.x; a.targetY = nearest.y;
+                                a.state = 'walking';
+                            } else {
+                                a.state = 'working';
+                                nearest.health -= a.warriorType === 'gun' ? 0.3 : 0.6;
+                                if (Math.random() < (a.warriorType === 'gun' ? 0.15 : 0.3)) {
+                                    spawnParticle(a, nearest, a.warriorType === 'gun' ? '#fbbf24' : '#f87171');
+                                }
+                                a.task = a.warriorType === 'gun' ? 'Suppressing Fire' : 'Melee Combat';
+                                
+                                // Maintain distance if gunner
+                                if (a.warriorType === 'gun' && minDist < followDist) {
+                                    a.targetX = a.x + (a.x - nearest.x);
+                                    a.targetY = a.y + (a.y - nearest.y);
+                                    a.state = 'walking';
+                                }
+                            }
+                        } else {
+                            a.task = 'Patrolling';
+                            if (Math.random() < 0.01) {
+                                a.targetX = ROOM.floorX + Math.random() * ROOM.floorW;
+                                a.targetY = ROOM.floorY + Math.random() * ROOM.floorH;
+                                a.state = 'walking';
+                            }
+                        }
+                    } else if (a.role === 'Medic') {
+                        let wounded = null;
+                        let maxWound = 0;
+                        agents.forEach(other => {
+                            if (other.room === 3 && other.health < other.maxHealth) {
+                                const wound = other.maxHealth - other.health;
+                                if (wound > maxWound) { maxWound = wound; wounded = other; }
+                            }
+                        });
+
+                        if (wounded) {
+                            const d = Math.sqrt((wounded.x - a.x) ** 2 + (wounded.y - a.y) ** 2);
+                            if (d > 50) {
+                                a.targetX = wounded.x; a.targetY = wounded.y;
+                                a.state = 'walking';
+                                a.task = 'Healing...';
+                            } else {
+                                a.state = 'thinking'; // Reusing 'thinking' for healing stance
+                                wounded.health += 0.25;
+                                if (Math.random() < 0.15) spawnParticle(a, wounded, '#34d399');
+                                a.task = `Healing ${wounded.name}`;
+                            }
+                        } else {
+                            a.task = 'Ready';
+                            if (Math.random() < 0.01) {
+                                a.targetX = ROOM.floorX + Math.random() * ROOM.floorW;
+                                a.targetY = ROOM.floorY + Math.random() * ROOM.floorH;
+                                a.state = 'walking';
+                            }
+                        }
+                    }
+                }
+            });
+
+            aliens = aliens.filter(al => al.health > 0);
+            agents.forEach(a => {
+                if (a.room === 3) {
+                    if (a.health <= 0) {
+                        a.health = 30; // Emergency revival
+                        a.x = ROOM.floorX + 20; a.y = ROOM.floorY + ROOM.floorH / 2;
+                        a.targetX = a.x; a.targetY = a.y;
+                        addLog('system_0', `CRITICAL: ${a.name} retreated for medical aid!`);
+                    }
+                    if (a.health > a.maxHealth) a.health = a.maxHealth;
+                }
+            });
         }
 
         function triggerExplosion() {
@@ -1489,6 +1747,11 @@
                     }
                 } else if (a.room === 0) {
                     a.gardenTimer = 0;
+                }
+
+                // Restriction: War Zone agents (Warrior/Medic) stay in Room 3
+                if (a.room === 3) {
+                    a.targetRoom = 3;
                 }
 
                 // Hardware failure logic (only in Office) - reduced frequency
@@ -1769,6 +2032,7 @@
             drawParticles();
             updateAgents();
             updateRepairman();
+            updateCombat();
 
             if (currentRoom === 0) {
                 drawEnvironment();
@@ -1801,6 +2065,9 @@
                 ctx.font = '10px "Press Start 2P"';
                 ctx.textAlign = 'center';
                 ctx.fillText(isExploded ? 'PULSAR COLLAPSE' : 'CELLULAR PULSAR STABLE', ROOM.floorX + ROOM.floorW / 2, ROOM.floorY + ROOM.floorH / 2 + 60);
+            } else if (currentRoom === 3) {
+                drawWarZone();
+                aliens.forEach(al => drawAlien(al));
             }
 
             // Stability UI
@@ -1937,17 +2204,21 @@
             } else {
                 currentRoom = n;
             }
-            const roomNames = ['The Office', 'Server Core', 'Space Dome'];
+            const roomNames = ['The Office', 'Server Core', 'Space Dome', 'War Zone'];
             addLog('system_0', `Switching to ${roomNames[currentRoom]}`);
 
             const btn1 = document.getElementById('switchBtn1');
             const btn2 = document.getElementById('switchBtn2');
+            const btn3 = document.getElementById('switchBtn3');
 
             btn1.textContent = currentRoom === 1 ? 'BACK TO OFFICE' : 'SERVER ROOM';
             btn1.style.background = currentRoom === 1 ? '#475569' : 'var(--purple)';
 
             btn2.textContent = currentRoom === 2 ? 'BACK TO OFFICE' : 'SPACE DOME';
             btn2.style.background = currentRoom === 2 ? '#475569' : 'var(--cyan)';
+
+            btn3.textContent = currentRoom === 3 ? 'BACK TO OFFICE' : 'WAR ZONE';
+            btn3.style.background = currentRoom === 3 ? '#475569' : 'var(--red)';
         }
 
         function switchRoom() { goToRoom(1); }
