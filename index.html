@@ -1357,21 +1357,36 @@
         }
 
         function updateAgents() {
-            agents.forEach(a => {
-                // Ship Stability Logic
-                if (!isExploded) {
-                    if (a.state === 'working' || a.state === 'thinking') stability += 0.005;
-                    else if (a.state === 'relaxed' || a.state === 'sleeping') stability -= 0.01;
-                    else stability -= 0.002;
+            // Collective Ship Stability Logic
+            if (!isExploded) {
+                let collectiveGain = 0;
+                let collectiveLoss = 0;
+                let someoneSlacking = false;
+
+                agents.forEach(a => {
+                    const isProductive = a.state === 'working' || a.state === 'thinking';
+                    if (isProductive) {
+                        collectiveGain += 0.006;
+                    } else {
+                        someoneSlacking = true;
+                        if (a.state === 'relaxed' || a.state === 'sleeping') collectiveLoss += 0.025;
+                        else collectiveLoss += 0.008; // Walking/Idling
+                    }
+                });
+
+                // Rule: If someone is not working, the stability will NOT rise.
+                if (someoneSlacking) {
+                    stability -= collectiveLoss;
+                } else {
+                    stability += collectiveGain;
                 }
 
                 if (stability > 100) stability = 100;
                 if (stability < 0) stability = 0;
+                if (stability === 0) triggerExplosion();
+            }
 
-                if (stability === 0 && !isExploded) {
-                    triggerExplosion();
-                }
-
+            agents.forEach(a => {
                 if (isExploded) {
                     a.state = 'crazy';
                     a.task = 'SYSTEM COLLAPSE!!!';
